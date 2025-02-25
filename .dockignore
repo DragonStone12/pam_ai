@@ -1,0 +1,30 @@
+.git
+.vscode
+.gitignore
+Makefile
+README.md
+
+#Ignore the logs directory
+logs/
+
+#Ignoring git and cache folders
+.cache
+
+.env
+.DS_Store
+*.db
+
+LICENSE
+Dockerfile*
+docker-compose*
+data/*
+test/*
+
+
+# dotenv
+.env
+
+
+# IntelliJ
+out/
+.idea/

@@ -6,20 +6,27 @@ import os
 import joblib
 from sklearn.pipeline import Pipeline
 
-from schemas.obesity_schema import ObesityPredictionInput, ModelPrediction, CombinedPredictionOutput, \
-    ObesityPredictionOutput
+from schemas.obesity_schema import ObesityPredictionInput, ModelPrediction, ObesityPredictionOutput
 
 memory = joblib.Memory(location="cache.joblib")
 
+weights = {
+    'logistic': 0.5,
+    'cart': 0.3,
+    'naive_bayes': 0.2
+}
+
+THRESHOLD = 0.65
+
 @memory.cache(ignore=["model"])
-def predict(model: Pipeline, input_data: pd.DataFrame, threshold: float = 0.5) -> tuple[str, float]:
+def predict(model: Pipeline, input_data: pd.DataFrame) -> tuple[str, float]:
     if isinstance(input_data, dict):
         df = pd.DataFrame([input_data])
     else:
         df = input_data
 
     probability = model.predict_proba(df)[0][1]
-    prediction = "obese" if probability >= threshold else "non-obese"
+    prediction = "obese" if probability >= THRESHOLD else "non-obese"
 
     return prediction, probability
 
@@ -48,49 +55,46 @@ class ObesityModel:
         self.targets = ["non-obese", "obese"]
 
 
-
     def predict_obesity(self, prediction_input: ObesityPredictionInput) -> ObesityPredictionOutput:
-        """Runs an obesity prediction using the logistic regression model"""
-        if not self.logistic_model or not self.feature_order:
-            raise RuntimeError("Model is not loaded")
-
-        input_dict = prediction_input.model_dump()
-        input_df = pd.DataFrame([input_dict], columns=self.feature_order)
-
-        prediction, probability = predict(self.logistic_model, input_df)
-
-        return ObesityPredictionOutput(
-            obesity_status=prediction,
-            probability=round(probability, 4)
-        )
-
-
-    def predict(self, model: Pipeline, input_df: pd.DataFrame) -> ModelPrediction:
-        """Runs a prediction for a single model"""
-        if not model or not self.feature_order:
-            raise RuntimeError("Model is not loaded")
-
-        prediction, probability = predict(model, input_df)
-        return ModelPrediction(obesity_status=prediction, probability=round(probability, 4))
-
-
-    def predict_all(self, prediction_input: ObesityPredictionInput) -> CombinedPredictionOutput:
-        """Runs predictions for all three models"""
         if not self.logistic_model or not self.cart_model or not self.naive_bayes_model or not self.feature_order:
             raise RuntimeError("Models are not loaded")
 
         input_dict = prediction_input.model_dump()
         input_df = pd.DataFrame([input_dict], columns=self.feature_order)
 
-        logistic_prediction = self.predict(self.logistic_model, input_df)
-        cart_prediction = self.predict(self.cart_model, input_df)
-        naive_bayes_prediction = self.predict(self.naive_bayes_model, input_df)
+        logistic_prediction, logistic_probability = predict(self.logistic_model, input_df)
+        cart_prediction, cart_probability = predict(self.cart_model, input_df)
+        naive_bayes_prediction, naive_bayes_probability = predict(self.naive_bayes_model, input_df)
 
-        return CombinedPredictionOutput(
-            logistic=logistic_prediction,
-            cart=cart_prediction,
-            naive_bayes=naive_bayes_prediction
+        logistic_result = ModelPrediction(
+            obesity_status=logistic_prediction,
+            probability=round(logistic_probability, 4)
         )
 
+        cart_result = ModelPrediction(
+            obesity_status=cart_prediction,
+            probability=round(cart_probability, 4)
+        )
+
+        naive_bayes_result = ModelPrediction(
+            obesity_status=naive_bayes_prediction,
+            probability=round(naive_bayes_probability, 4)
+        )
+
+        weighted_probability = (
+            weights['logistic'] * logistic_probability +
+            weights['cart'] * cart_probability +
+            weights['naive_bayes'] * naive_bayes_probability
+        )
+
+        prediction = "obese" if weighted_probability >= THRESHOLD else "non-obese"
+
+        return ObesityPredictionOutput(
+            logistic=logistic_result,
+            cart=cart_result,
+            naive_bayes=naive_bayes_result,
+            prediction=prediction,
+            probability=round(weighted_probability, 4)
+        )
 
 obesity_model = ObesityModel()

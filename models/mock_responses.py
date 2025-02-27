@@ -1,4 +1,5 @@
-from schemas.obesity_schema import ModelPrediction, ObesityPredictionOutput, CombinedPredictionOutput
+from models.obesity_model import weights, THRESHOLD
+from schemas.obesity_schema import ModelPrediction, ObesityPredictionOutput
 
 logistic = ModelPrediction(
     obesity_status='obese',
@@ -17,15 +18,18 @@ naive_bayes = ModelPrediction(
 
 
 def mock_prediction() -> ObesityPredictionOutput:
-    return ObesityPredictionOutput(
-        obesity_status='obese',
-        probability=1
+    weighted_probability = (
+        weights['logistic'] * logistic.probability +
+        weights['cart'] * cart.probability +
+        weights['naive_bayes'] * naive_bayes.probability
     )
 
+    prediction = "obese" if weighted_probability >= THRESHOLD else "non-obese"
 
-def mock_predictions() -> CombinedPredictionOutput:
-    return CombinedPredictionOutput(
+    return ObesityPredictionOutput(
         logistic=logistic,
         cart=cart,
-        naive_bayes=naive_bayes
+        naive_bayes=naive_bayes,
+        prediction=prediction,
+        probability=round(weighted_probability, 4)
     )

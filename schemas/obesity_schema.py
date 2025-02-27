@@ -5,12 +5,14 @@ class ModelPrediction(BaseModel):
     probability: float
 
 
-class CombinedPredictionOutput(BaseModel):
+class ObesityPredictionOutput(BaseModel):
     logistic: ModelPrediction
     cart: ModelPrediction
     naive_bayes: ModelPrediction
+    prediction: str
+    probability: float
 
-    
+
 class ObesityPredictionInput(BaseModel):
     location: str
     marital_status: str
@@ -29,6 +31,6 @@ class ObesityPredictionInput(BaseModel):
     smoking: str
     fruit_vegetables_consumption: str
 
-class ObesityPredictionOutput(BaseModel):
+class ObesityResults(BaseModel):
     obesity_status: str
     probability: float

@@ -18,11 +18,16 @@ class ObesityPredictionInput(BaseModel):
     marital_status: str
     age_group: str
     education: str
+    work_category: str
     sweet_drinks: str
+    salty_foods: str
+    sugary_food: str
     fatty_oily_foods: str
     grilled_foods: str
+    energy_drinks: str
     preserved_foods: str
     seasoning_powders: str
+    instant_foods: str
     soft_carbonated_drinks: str
     alcoholic_drinks: str
     mental_emotional_disorders: str
@@ -31,6 +36,3 @@ class ObesityPredictionInput(BaseModel):
     smoking: str
     fruit_vegetables_consumption: str
 
-class ObesityResults(BaseModel):
-    obesity_status: str
-    probability: float
